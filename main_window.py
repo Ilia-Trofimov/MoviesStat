@@ -1,6 +1,8 @@
 from tkinter import *
 from tkinter.ttk import *
 
+from tkcalendar import DateEntry
+
 """
     Идеи:
         1. По клику в строке фильма открывается расширенная информация о нём
@@ -48,16 +50,61 @@ class MainWindow(Tk):
         self.movie_table.column('vote_count', width=90)
         self.movie_table.grid(row=0, column=1)
 
+        self.search_frame = Frame(self.search, borderwidth=1, relief=SOLID, width=300, height=300)
+
+        '''
+        menubutton = Menubutton(self.search_frame, text="Choose wisely")
+        menu = Menu(menubutton, tearoff=False)
+        menubutton.configure(menu=menu)
+        menubutton.pack(padx=10, pady=10)
+
+        self.choices = {}
+        for choice in ("Iron Man", "Superman", "Batman"):
+            self.choices[choice] = IntVar(value=0)
+            menu.add_checkbutton(label=choice, variable=self.choices[choice],
+                                 onvalue=1, offvalue=0)
+        '''
+        self.search_frame.pack_propagate(0)
+        self.search_button = Button(self.search_frame, text='Поиск')
+        self.genre_label = Label(self.search_frame, text='Жанр')
+        self.genre_combobox = Combobox(self.search_frame)
+        self.name_label = Label(self.search_frame, text='Название')
+        self.name_entry = Entry(self.search_frame)
+        self.language_label = Label(self.search_frame, text='Язык')
+        self.language_combobox = Combobox(self.search_frame)
+        self.production_label = Label(self.search_frame, text='Кинокомпания')
+        self.production_combobox = Combobox(self.search_frame)
+        self.release_date_start_date_entry = DateEntry(self.search_frame)
+        self.release_date_finish_date_entry = DateEntry(self.search_frame)
+
+
+
+        self.search_button.pack(anchor=SE, side=BOTTOM)
+        # Даты в отдельном frame
+        self.release_date_start_date_entry.grid(column=0, row=0)
+        self.release_date_finish_date_entry.grid(column=1, row=0)
+        self.production_combobox.pack(anchor=W, side=BOTTOM)
+        self.production_label.pack(anchor=W, side=BOTTOM)
+        self.language_combobox.pack(anchor=W, side=BOTTOM)
+        self.language_label.pack(anchor=W, side=BOTTOM)
+        self.genre_combobox.pack(anchor=W, side=BOTTOM)
+        self.genre_label.pack(anchor=W, side=BOTTOM)
+        self.name_entry.pack(anchor=W, side=BOTTOM)
+        self.name_label.pack(anchor=W, side=BOTTOM)
+
+
+        self.search_frame.grid(row=0, column=0)
+
         """
-        Название - текстовый ввод
-        Жанр, Язык, Кинокомпания - выпадающий список
+        +Название - текстовый ввод
+        +Жанр, Язык, Кинокомпания - выпадающий список
         Дата - диапазон дат
         Продолжительность - диапазон
         Средняя оценка - диапазон
         Кол-во оценок - диапазон
         Теги - текстовый ввод
         Актёры - ???
-        Кнопка поиска
+        +Кнопка поиска
         """
 
         self.mainloop()
