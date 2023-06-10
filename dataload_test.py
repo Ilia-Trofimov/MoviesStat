@@ -6,24 +6,24 @@ df = pd.read_csv("movies1.csv", delimiter=";", encoding="iso-8859-1", dtype={'ti
                                                                              'original_language': str,
                                                                              'budget': float, 'revenue': float,
                                                                              'runtime': float, 'vote_average': float,
-                                                                             'vote_count': float},
+                                                                             'vote_count': float, 'keywords': str},
                  parse_dates=['release_date'], dayfirst=True, on_bad_lines='skip')
 df = df[['title', 'genres', 'original_language', 'release_date', 'budget', 'revenue', 'runtime',
-         'vote_average', 'vote_count']].rename(columns={"title": "Название", "genres": "Жанры",
+         'vote_average', 'vote_count', 'keywords']].rename(columns={"title": "Название", "genres": "Жанры",
                                                         "original_language": "Язык оригинала",
                                                         "release_date": "Дата выхода",
                                                         "budget": "Бюджет",
                                                         "revenue": "Сборы",
                                                         "runtime": "Продолжительность",
                                                         "vote_average": "Рейтинг",
-                                                        "vote_count": "Количество оценок"})
+                                                        "vote_count": "Количество оценок", "keywords": "Теги"})
 df = df.drop_duplicates(subset=['Название', 'Дата выхода'])
 
 df['Дата выхода'] = pd.to_datetime(df['Дата выхода'], format='%d.%m.%Y', errors='coerce')
 df['Дата выхода'] = df['Дата выхода'].dt.date
 df['Жанры'].fillna('', inplace=True)
+df['Теги'].fillna('', inplace=True)
 filtered_df = df.copy()
-
 
 def update_table(event=None):
     selected_language = language_var.get()
@@ -46,6 +46,8 @@ def update_table(event=None):
 
     for genre in selected_genres:
         filtered_df = filtered_df[filtered_df['Жанры'].str.contains(genre)]
+    for keyword in selected_keywords:
+        filtered_df = filtered_df[filtered_df['Теги'].str.contains(keyword)]
     rows_loaded = 0
     update_table_display()
 
@@ -101,7 +103,7 @@ def prev_rows():
 
 
 def sort_table(column):
-    global current_sort_column, current_sort_order
+    global current_sort_column, current_sort_order, rows_loaded
     if current_sort_column == column:
         current_sort_order = "asc" if current_sort_order == "desc" else "desc"
     else:
@@ -109,6 +111,7 @@ def sort_table(column):
         current_sort_order = "asc"
 
     filtered_df.sort_values(by=column, ascending=(current_sort_order == "asc"), inplace=True)
+    rows_loaded = 0
     update_table_display()
 
 
@@ -118,17 +121,34 @@ def add_genre(event):
         selected_genres.append(genre)
         genre_label = tk.Label(root, text=genre)
         genre_label.pack(side="left", padx=5)
-        remove_button = tk.Button(root, text="x", command=lambda: remove_genre(genre, genre_label, remove_button))
+        remove_button = tk.Button(root, text="x", command=lambda: remove_item(genre, genre_label, remove_button, selected_genres))
+        remove_button.pack(side="left", padx=5)
+        update_table()
+
+def add_keyword(event):
+    keyword = keyword_combobox.get()
+    if keyword not in selected_keywords:
+        selected_keywords.append(keyword)
+        keyword_label = tk.Label(root, text=keyword)
+        keyword_label.pack(side="left", padx=5)
+        remove_button = tk.Button(root, text="x", command=lambda: remove_item(keyword, keyword_label, remove_button, selected_keywords))
         remove_button.pack(side="left", padx=5)
         update_table()
 
 
-def remove_genre(genre, genre_label, remove_button):
-    selected_genres.remove(genre)
-    genre_label.pack_forget()
+def remove_item(item, item_label, remove_button, selected_items):
+    selected_items.remove(item)
+    item_label.pack_forget()
     remove_button.pack_forget()
     update_table()
 
+def search_keyword(event):
+    search_term = keyword_combobox.get().lower()
+    if search_term == '':
+        filtered_values = original_values
+    else:
+        filtered_values = [value for value in original_values if search_term in value]
+    keyword_combobox['values'] = filtered_values
 
 root = tk.Tk()
 
@@ -137,6 +157,9 @@ table["columns"] = list(df.columns)
 
 for column in df.columns:
     table.heading(column, text=column)
+
+table.column('Жанры', width=0, stretch=False)
+table.column('Теги', width=0, stretch=False)
 
 current_sort_column = ""
 current_sort_order = ""
@@ -183,16 +206,20 @@ prev_button = tk.Button(root, text="Предыдущие", command=prev_rows)
 prev_button.pack()
 
 genre_frame = tk.Frame(root)
-genre_frame.pack()
-
 genre_label = tk.Label(genre_frame, text="Жанры:")
 genre_label.pack(side="left", padx=5)
-
 selected_genres = []
-
 genre_combobox = ttk.Combobox(root, values=list(df['Жанры'].str.split('-').explode().unique()), state="readonly")
-genre_combobox.pack()
 genre_combobox.bind("<<ComboboxSelected>>", add_genre)
+
+keyword_frame = tk.Frame(root)
+keyword_label = tk.Label(keyword_frame, text="Теги:")
+keyword_label.pack(side="left", padx=5)
+selected_keywords = []
+keyword_combobox = ttk.Combobox(root, values=list(df['Теги'].str.split('-').explode().unique()))
+keyword_combobox.bind("<<ComboboxSelected>>", add_keyword)
+keyword_combobox.bind("<KeyRelease>", search_keyword)
+original_values = list(df['Теги'].str.split('-').explode().unique())
 
 table.pack()
 language_combobox.pack()
@@ -204,6 +231,10 @@ min_vote_count_label.pack()
 min_vote_count_slider.pack()
 max_vote_count_label.pack()
 max_vote_count_slider.pack()
+genre_frame.pack()
+genre_combobox.pack()
+keyword_frame.pack()
+keyword_combobox.pack()
 
 upload_table()
 
