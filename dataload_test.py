@@ -2,7 +2,7 @@ import pandas as pd
 import tkinter as tk
 from tkinter import ttk
 
-df = pd.read_csv("movies1.csv", delimiter=";", encoding="iso-8859-1", dtype={'title': str, 'genres': str,
+df = pd.read_csv("movies.csv", delimiter=",", encoding="iso-8859-1", dtype={'title': str, 'genres': str,
                                                                              'original_language': str,
                                                                              'budget': float, 'revenue': float,
                                                                              'runtime': float, 'vote_average': float,
@@ -19,8 +19,7 @@ df = df[['title', 'genres', 'original_language', 'release_date', 'budget', 'reve
                                                         "vote_count": "Количество оценок", "keywords": "Теги"})
 df = df.drop_duplicates(subset=['Название', 'Дата выхода'])
 
-df['Дата выхода'] = pd.to_datetime(df['Дата выхода'], format='%d.%m.%Y', errors='coerce')
-df['Дата выхода'] = df['Дата выхода'].dt.date
+df['Дата выхода'] = pd.to_datetime(df['Дата выхода'], format='%d.%m.%Y', errors='coerce').dt.date
 df['Жанры'].fillna('', inplace=True)
 df['Теги'].fillna('', inplace=True)
 filtered_df = df.copy()
@@ -209,7 +208,7 @@ genre_frame = tk.Frame(root)
 genre_label = tk.Label(genre_frame, text="Жанры:")
 genre_label.pack(side="left", padx=5)
 selected_genres = []
-genre_combobox = ttk.Combobox(root, values=list(df['Жанры'].str.split('-').explode().unique()), state="readonly")
+genre_combobox = ttk.Combobox(root, values=sorted(list(df['Жанры'].str.split('-').explode().unique())), state="readonly")
 genre_combobox.bind("<<ComboboxSelected>>", add_genre)
 
 keyword_frame = tk.Frame(root)
