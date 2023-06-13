@@ -15,7 +15,7 @@ pd.set_option('display.max_colwidth', None)
 pd.set_option('display.max_columns', None)
 pd.set_option('display.width', 1000)
 
-movies = pd.DataFrame(pd.read_csv('movies.csv', usecols=['release_date', 'budget', 'revenue', 'vote_count']))
+# movies = pd.DataFrame(pd.read_csv('movies.csv', usecols=['release_date', 'budget', 'revenue', 'vote_count']))
 ''' 
 marvel = movies['production_companies'] == 'Marvel Studios'
 marvel_data = pd.DataFrame(movies.loc[marvel, ["title"]])

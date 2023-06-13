@@ -2,11 +2,11 @@ import pandas as pd
 import tkinter as tk
 from tkinter import ttk
 
-df = pd.read_csv("movies.csv", delimiter=",", encoding="iso-8859-1", dtype={'title': str, 'genres': str,
+df = pd.read_csv("movies1.csv", delimiter=";", encoding="iso-8859-1", dtype={'title': str, 'genres': str,
                                                                              'original_language': str,
                                                                              'budget': float, 'revenue': float,
                                                                              'runtime': float, 'vote_average': float,
-                                                                             'vote_count': float, 'keywords': str},
+                                                                             'vote_count': float, 'keywords': str, 'credits': str},
                  parse_dates=['release_date'], dayfirst=True, on_bad_lines='skip')
 df = df[['title', 'genres', 'original_language', 'release_date', 'budget', 'revenue', 'runtime',
          'vote_average', 'vote_count', 'keywords']].rename(columns={"title": "Название", "genres": "Жанры",
@@ -33,7 +33,6 @@ def update_table(event=None):
 
     global filtered_df, rows_loaded
 
-    filtered_df = df.copy()
     if selected_language != "":
         filtered_df = filtered_df[filtered_df["Язык оригинала"] == selected_language]
     filtered_df = filtered_df[
@@ -47,6 +46,10 @@ def update_table(event=None):
         filtered_df = filtered_df[filtered_df['Жанры'].str.contains(genre)]
     for keyword in selected_keywords:
         filtered_df = filtered_df[filtered_df['Теги'].str.contains(keyword)]
+    '''
+    for item in selected_items:
+        filtered_df = filtered_df[filtered_df['Жанры'].str.contains(item)]
+        '''
     rows_loaded = 0
     update_table_display()
 
@@ -112,17 +115,28 @@ def sort_table(column):
     filtered_df.sort_values(by=column, ascending=(current_sort_order == "asc"), inplace=True)
     rows_loaded = 0
     update_table_display()
-
-
-def add_genre(event):
-    genre = genre_combobox.get()
-    if genre not in selected_genres:
-        selected_genres.append(genre)
-        genre_label = tk.Label(root, text=genre)
-        genre_label.pack(side="left", padx=5)
-        remove_button = tk.Button(root, text="x", command=lambda: remove_item(genre, genre_label, remove_button, selected_genres))
+'''
+def add_item(item_combobox):
+    item = item_combobox.get()
+    if item not in selected_items:
+        selected_items.append(item)
+        item_label = tk.Label(root, text=item)
+        item_label.pack(side="left", padx=5)
+        remove_button = tk.Button(root, text="x", command=lambda: remove_item(item, item_label, remove_button, selected_items))
         remove_button.pack(side="left", padx=5)
         update_table()
+
+
+'''
+def add_genre(event):
+ genre = genre_combobox.get()
+ if genre not in selected_genres:
+     selected_genres.append(genre)
+     genre_label = tk.Label(root, text=genre)
+     genre_label.pack(side="left", padx=5)
+     remove_button = tk.Button(root, text="x", command=lambda: remove_item(genre, genre_label, remove_button, selected_genres))
+     remove_button.pack(side="left", padx=5)
+     update_table()
 
 def add_keyword(event):
     keyword = keyword_combobox.get()
@@ -149,6 +163,17 @@ def search_keyword(event):
         filtered_values = [value for value in original_values if search_term in value]
     keyword_combobox['values'] = filtered_values
 
+def show_movie_details(event):
+    selected_item = table.focus()
+    movie_data = table.item(selected_item)
+    movie_info = movie_data['values']
+
+    title_label.config(text="Название: " + movie_info[0])
+    genres_label.config(text="Жанры: " + movie_info[1].replace("-", ", "))
+    language_label.config(text="Язык оригинала: " + movie_info[2])
+
+
+
 root = tk.Tk()
 
 table = ttk.Treeview(root, show='headings')
@@ -159,6 +184,8 @@ for column in df.columns:
 
 table.column('Жанры', width=0, stretch=False)
 table.column('Теги', width=0, stretch=False)
+
+table.bind('<ButtonRelease-1>', show_movie_details)
 
 current_sort_column = ""
 current_sort_order = ""
@@ -182,13 +209,13 @@ max_rating_slider = tk.Scale(root, from_=1, to=10, orient=tk.HORIZONTAL, length=
 max_rating_slider.set(10)
 
 min_vote_count_label = tk.Label(root, text="Минимальное количество оценок:")
-min_vote_count_slider = tk.Scale(root, from_=df['Количество оценок'].min(), to=df['Количество оценок'].max(),
+min_vote_count_slider = tk.Scale(root, from_=0.0, to=33262.0,
                                 orient=tk.HORIZONTAL, length=200, resolution=10)
 
 max_vote_count_label = tk.Label(root, text="Максимальное количество оценок:")
-max_vote_count_slider = tk.Scale(root, from_=df['Количество оценок'].min(), to=df['Количество оценок'].max(),
+max_vote_count_slider = tk.Scale(root, from_=0.0, to=33262.0,
                                 orient=tk.HORIZONTAL, length=200, resolution=10)
-max_vote_count_slider.set(df['Количество оценок'].max())
+max_vote_count_slider.set(33262.0)
 
 min_rating_slider.bind("<B1-Motion>", update_table)
 max_rating_slider.bind("<B1-Motion>", update_table)
@@ -204,12 +231,14 @@ next_button.pack()
 prev_button = tk.Button(root, text="Предыдущие", command=prev_rows)
 prev_button.pack()
 
+# selected_items = []
 genre_frame = tk.Frame(root)
 genre_label = tk.Label(genre_frame, text="Жанры:")
 genre_label.pack(side="left", padx=5)
 selected_genres = []
 genre_combobox = ttk.Combobox(root, values=sorted(list(df['Жанры'].str.split('-').explode().unique())), state="readonly")
 genre_combobox.bind("<<ComboboxSelected>>", add_genre)
+
 
 keyword_frame = tk.Frame(root)
 keyword_label = tk.Label(keyword_frame, text="Теги:")
@@ -219,6 +248,11 @@ keyword_combobox = ttk.Combobox(root, values=list(df['Теги'].str.split('-').
 keyword_combobox.bind("<<ComboboxSelected>>", add_keyword)
 keyword_combobox.bind("<KeyRelease>", search_keyword)
 original_values = list(df['Теги'].str.split('-').explode().unique())
+
+movie_details_frame = tk.Frame(root)
+title_label = tk.Label(movie_details_frame, text="Название:")
+genres_label = tk.Label(movie_details_frame, text="Жанры:")
+language_label = tk.Label(movie_details_frame, text="Язык оригинала:")
 
 table.pack()
 language_combobox.pack()
@@ -234,6 +268,10 @@ genre_frame.pack()
 genre_combobox.pack()
 keyword_frame.pack()
 keyword_combobox.pack()
+movie_details_frame.pack()
+title_label.pack()
+genres_label.pack()
+language_label.pack()
 
 upload_table()
 
