@@ -1,5 +1,6 @@
-from tkinter import *
-from tkinter.ttk import *
+import tkinter as tk
+from tkinter import BOTH, SOLID, HORIZONTAL
+from tkinter.ttk import Notebook, Treeview, Combobox, Entry, Label
 
 from movies_list import MoviesList
 
@@ -9,17 +10,17 @@ from movies_list import MoviesList
 """
 
 
-class MainWindow(Tk):
+class MainWindow(tk.Tk):
     def __init__(self):
-        Tk.__init__(self)
+        tk.Tk.__init__(self)
 
         self.title('Movie Stat')
         self.geometry('1100x700')
 
         self.notebook = Notebook()
         self.notebook.pack(expand=True, fill=BOTH)
-        self.search = Frame(self.notebook)
-        self.chart = Frame(self.notebook)
+        self.search = tk.Frame(self.notebook)
+        self.chart = tk.Frame(self.notebook)
         self.search.pack(expand=True, fill=BOTH)
         self.chart.pack(expand=True, fill=BOTH)
         self.notebook.add(self.search, text='Поиск и фильтрация')
@@ -51,14 +52,14 @@ class MainWindow(Tk):
         self.movie_table.column('vote_count', width=90)
         self.movie_table.grid(row=0, column=0, columnspan=3, pady=5, padx=15)
 
-        self.next_button = Button(self.search, text="Следующие", command=self.next_rows)
+        self.next_button = tk.Button(self.search, text="Следующие", command=self.next_rows)
         self.next_button.grid(row=1, column=2, sticky='w')
-        self.prev_button = Button(self.search, text="Предыдущие", command=self.prev_rows)
+        self.prev_button = tk.Button(self.search, text="Предыдущие", command=self.prev_rows)
         self.prev_button.grid(row=1, column=0, sticky='e')
-        self.rows_loaded_label = Label(self.search, text="Загружено строк: 0/0")
+        self.rows_loaded_label = tk.Label(self.search, text="Загружено строк: 0/0")
         self.rows_loaded_label.grid(row=1, column=1, sticky='s')
 
-        self.search_frame = Frame(self.search, borderwidth=1, relief=SOLID, width=1000, height=1000)
+        self.search_frame = tk.Frame(self.search, borderwidth=1, relief=SOLID, width=1000, height=1000)
 
         language_counts = self.data.filtered_df['original_language'].value_counts()
         languages = language_counts.index.tolist()
@@ -71,9 +72,9 @@ class MainWindow(Tk):
         productions = production_counts.index.tolist()
 
         # self.search_button = Button(self.search_frame, text='Поиск')
-        self.genre_label = Label(self.search_frame, text='Жанры')
+        self.genre_label = tk.Label(self.search_frame, text='Жанры')
         self.genre_combobox = Combobox(self.search_frame, values=genres)
-        self.name_label = Label(self.search_frame, text='Название')
+        self.name_label = tk.Label(self.search_frame, text='Название')
         self.name_entry = Entry(self.search_frame)
         self.language_label = Label(self.search_frame, text='Язык')
         self.language_combobox = Combobox(self.search_frame, values=languages)
@@ -82,19 +83,19 @@ class MainWindow(Tk):
         self.keyword_label = Label(self.search_frame, text='Теги')
         self.keyword_combobox = Combobox(self.search_frame, values=keywords)
         self.min_rating_label = Label(self.search_frame, text="Минимальный рейтинг:")
-        self.min_rating_slider = Scale(self.search_frame, from_=1, to=10, orient=HORIZONTAL, length=200)
+        self.min_rating_slider = tk.Scale(self.search_frame, from_=1, to=10, orient=HORIZONTAL, length=200)
         self.max_rating_label = Label(self.search_frame, text="Максимальный рейтинг:")
-        self.max_rating_slider = Scale(self.search_frame, from_=1, to=10, orient=HORIZONTAL, length=200)
+        self.max_rating_slider = tk.Scale(self.search_frame, from_=1, to=10, orient=HORIZONTAL, length=200)
         self.max_rating_slider.set(10)
         self.min_vote_count_label = Label(self.search_frame, text="Минимальное количество оценок:")
-        self.min_vote_count_slider = Scale(self.search_frame, from_=0, to=33262, orient=HORIZONTAL, length=200)
+        self.min_vote_count_slider = tk.Scale(self.search_frame, from_=0, to=33262, orient=HORIZONTAL, length=200)
         self.max_vote_count_label = Label(self.search_frame, text="Максимальное количество оценок:")
-        self.max_vote_count_slider = Scale(self.search_frame, from_=0, to=33262, orient=HORIZONTAL, length=200)
+        self.max_vote_count_slider = tk.Scale(self.search_frame, from_=0, to=33262, orient=HORIZONTAL, length=200)
         self.max_vote_count_slider.set(33262)
         self.min_runtime_label = Label(self.search_frame, text="Минимальная продолжительность:")
-        self.min_runtime_slider = Scale(self.search_frame, from_=0, to=600, orient=HORIZONTAL, length=200)
+        self.min_runtime_slider = tk.Scale(self.search_frame, from_=0, to=600, orient=HORIZONTAL, length=200)
         self.max_runtime_label = Label(self.search_frame, text="Максимальная продолжительность:")
-        self.max_runtime_slider = Scale(self.search_frame, from_=0, to=600, orient=HORIZONTAL, length=200)
+        self.max_runtime_slider = tk.Scale(self.search_frame, from_=0, to=600, orient=HORIZONTAL, length=200)
         self.max_runtime_slider.set(600)
 
         # self.release_date_start_date_entry = DateEntry(self.search_frame)
@@ -126,29 +127,30 @@ class MainWindow(Tk):
         self.name_entry.grid(row=1, column=0)
         self.name_label.grid(row=0, column=0)
 
-        self.search_frame.grid(row=2, column=0, sticky='w', padx=15, pady=25)
+        self.search_frame.grid(row=2, column=0, sticky='w', padx=15, pady=25, columnspan=2)
 
         self.update_table_display()
         self.mainloop()
 
-        def update_df(event=None):
-            selected_language = self.language_combobox.get()
-            min_rating = self.min_rating_slider.get()
-            max_rating = self.max_rating_slider.get()
-            min_vote_count = self.min_vote_count_slider.get()
-            max_vote_count = self.max_vote_count_slider.get()
+    def update_df(self, event=None):
+        selected_language = self.language_combobox.get()
+        min_rating = self.min_rating_slider.get()
+        max_rating = self.max_rating_slider.get()
+        min_vote_count = self.min_vote_count_slider.get()
+        max_vote_count = self.max_vote_count_slider.get()
 
-            if selected_language != "":
-                self.data.filtered_df = self.data.filtered_df[self.data.filtered_df['original_language'] == selected_language]
-            self.data.filtered_df = self.data.filtered_df[
-                (self.data.filtered_df['vote_average'] >= min_rating) & (self.data.filtered_df['vote_average'] <= max_rating)
-                ]
-            self.data.filtered_df = self.data.filtered_df[
-                (self.data.filtered_df['vote_count'] >= min_vote_count) & (
-                            self.data.filtered_df['vote_count'] <= max_vote_count)
-                ]
-            rows_loaded = 0
-            self.update_table_display()
+        if selected_language != "":
+            self.data.filtered_df = self.data.filtered_df[self.data.filtered_df['original_language'] == selected_language]
+        self.data.filtered_df = self.data.filtered_df[
+            (self.data.filtered_df['vote_average'] >= min_rating) & (self.data.filtered_df['vote_average'] <= max_rating)
+            ]
+        self.data.filtered_df = self.data.filtered_df[
+            (self.data.filtered_df['vote_count'] >= min_vote_count) & (
+                        self.data.filtered_df['vote_count'] <= max_vote_count)
+            ]
+        rows_loaded = 0
+        self.update_table_display()
+
     def update_table_display(self):
         self.movie_table.delete(*self.movie_table.get_children())
         rows_to_show = self.data.filtered_df[self.rows_loaded:self.rows_loaded + 10]
