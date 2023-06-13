@@ -30,7 +30,7 @@ class MainWindow(tk.Tk):
         self.rows_loaded = 0
 
         self.movie_table_columns = ('title', 'genres', 'original_language', 'release_date', 'budget', 'revenue',
-                               'runtime', 'vote_average', 'vote_count')
+                                    'runtime', 'vote_average', 'vote_count')
         self.movie_table = Treeview(self.search, columns=self.movie_table_columns, show='headings')
         self.movie_table.heading('title', text='Название', command=lambda: self.sort_table('title', False))
         self.movie_table.heading('genres', text='Жанры', command=lambda: self.sort_table('genres', False))
@@ -76,8 +76,10 @@ class MainWindow(tk.Tk):
         self.genre_combobox = Combobox(self.search_frame, values=genres)
         self.name_label = tk.Label(self.search_frame, text='Название')
         self.name_entry = Entry(self.search_frame)
+        self.name_entry.bind("<KeyRelease>", self.update_table)
         self.language_label = Label(self.search_frame, text='Язык')
         self.language_combobox = Combobox(self.search_frame, values=languages)
+        self.language_combobox.bind("<<ComboboxSelected>>", self.update_table)
         self.production_label = Label(self.search_frame, text='Кинокомпании')
         self.production_combobox = Combobox(self.search_frame, values=productions)
         self.keyword_label = Label(self.search_frame, text='Теги')
@@ -129,26 +131,65 @@ class MainWindow(tk.Tk):
 
         self.search_frame.grid(row=2, column=0, sticky='w', padx=15, pady=25, columnspan=2)
 
+        self.min_rating_slider.bind("<B1-Motion>", self.update_table)
+        self.max_rating_slider.bind("<B1-Motion>", self.update_table)
+        self.min_vote_count_slider.bind("<B1-Motion>", self.update_table)
+        self.max_vote_count_slider.bind("<B1-Motion>", self.update_table)
+        self.min_runtime_slider.bind("<B1-Motion>", self.update_table)
+        self.max_runtime_slider.bind("<B1-Motion>", self.update_table)
+
         self.update_table_display()
         self.mainloop()
 
-    def update_df(self, event=None):
+    def update_table(self, event=None):
         selected_language = self.language_combobox.get()
-        min_rating = self.min_rating_slider.get()
-        max_rating = self.max_rating_slider.get()
         min_vote_count = self.min_vote_count_slider.get()
         max_vote_count = self.max_vote_count_slider.get()
+        min_rating = self.min_rating_slider.get()
+        max_rating = self.max_rating_slider.get()
+        search_title = self.name_entry.get().lower()
 
         if selected_language != "":
-            self.data.filtered_df = self.data.filtered_df[self.data.filtered_df['original_language'] == selected_language]
-        self.data.filtered_df = self.data.filtered_df[
-            (self.data.filtered_df['vote_average'] >= min_rating) & (self.data.filtered_df['vote_average'] <= max_rating)
-            ]
-        self.data.filtered_df = self.data.filtered_df[
-            (self.data.filtered_df['vote_count'] >= min_vote_count) & (
-                        self.data.filtered_df['vote_count'] <= max_vote_count)
-            ]
-        rows_loaded = 0
+            self.data.filtered_df = self.data.df[self.data.df['original_language'] == selected_language]
+        self.data.filtered_df = self.data.df[
+            (self.data.df['vote_count'] >= min_vote_count) & (
+                    self.data.df['vote_count'] <= max_vote_count)]
+        self.data.filtered_df = self.data.df[
+            (self.data.df['vote_average'] >= min_rating) & (self.data.df['vote_average'] <= max_rating)]
+        self.data.filtered_df = self.data.df[
+            self.data.df['title'].str.contains(search_title)]
+
+
+
+
+        self.rows_loaded = 0
+        self.update_table_display()
+
+    def vote_count_update(self, event):
+        min_vote_count = self.min_vote_count_slider.get()
+        max_vote_count = self.max_vote_count_slider.get()
+        self.data.filtered_df = self.data.df[
+            (self.data.df['vote_count'] >= min_vote_count) & (
+                    self.data.df['vote_count'] <= max_vote_count)]
+        self.update_table_display()
+
+    def rating_update(self, event):
+        min_rating = self.min_rating_slider.get()
+        max_rating = self.max_rating_slider.get()
+        self.data.filtered_df = self.data.df[
+            (self.data.df['vote_average'] >= min_rating) & (self.data.df['vote_average'] <= max_rating)]
+        self.update_table_display()
+
+    def title_update(self, event):
+        search_title = self.name_entry.get().lower()
+        self.data.filtered_df = self.data.df[
+            self.data.df['title'].str.contains(search_title)]
+        self.update_table_display()
+
+    def language_update(self, event):
+        selected_language = self.language_combobox.get()
+        if selected_language != "":
+            self.data.filtered_df = self.data.df[self.data.df['original_language'] == selected_language]
         self.update_table_display()
 
     def update_table_display(self):
