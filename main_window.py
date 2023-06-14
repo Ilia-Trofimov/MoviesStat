@@ -2,6 +2,10 @@ import tkinter as tk
 from tkinter import BOTH, SOLID, HORIZONTAL
 from tkinter.ttk import Notebook, Treeview, Combobox, Entry, Label
 
+from matplotlib.backends._backend_tk import NavigationToolbar2Tk
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.figure import Figure
+
 from movies_list import MoviesList
 
 """
@@ -29,6 +33,21 @@ class MainWindow(tk.Tk):
         self.data = MoviesList()
         self.rows_loaded = 0
 
+        # --- CHART ---
+
+        self.chart_frame = tk.Frame(self.chart)
+        self.figure = Figure(figsize=(3, 3), dpi=200)
+        self.canvas = FigureCanvasTkAgg(self.figure, master=self.chart_frame)
+        self.chart_button = tk.Button(self.chart, text="DRAW", command=self.draw_chart)
+        self.toolbar = NavigationToolbar2Tk(self.canvas, self.chart_frame)
+        self.canvas.get_tk_widget().pack()
+        #self.chart_frame.grid(row=0, column=0)
+        #self.chart_button.grid(row=1, column=0)
+        self.chart_frame.pack(anchor='n')
+        self.chart_button.pack(anchor='s')
+
+
+        # --- SEARCH ---
         self.movie_table_columns = ('title', 'genres', 'original_language', 'release_date', 'budget', 'revenue',
                                     'runtime', 'vote_average', 'vote_count')
         self.movie_table = Treeview(self.search, columns=self.movie_table_columns, show='headings')
@@ -149,19 +168,14 @@ class MainWindow(tk.Tk):
         max_rating = self.max_rating_slider.get()
         search_title = self.name_entry.get().lower()
 
+        self.data.filtered_df = self.data.df
+
         if selected_language != "":
-            self.data.filtered_df = self.data.df[self.data.df['original_language'] == selected_language]
-        self.data.filtered_df = self.data.df[
-            (self.data.df['vote_count'] >= min_vote_count) & (
-                    self.data.df['vote_count'] <= max_vote_count)]
-        self.data.filtered_df = self.data.df[
-            (self.data.df['vote_average'] >= min_rating) & (self.data.df['vote_average'] <= max_rating)]
-        self.data.filtered_df = self.data.df[
-            self.data.df['title'].str.contains(search_title)]
+            self.data.filtered_df = self.data.filtered_df[self.data.filtered_df['original_language'] == selected_language]
 
-
-
-
+        self.data.filtered_df = self.data.filtered_df[(self.data.filtered_df['vote_count'] >= min_vote_count) & (self.data.filtered_df['vote_count'] <= max_vote_count)]
+        self.data.filtered_df = self.data.filtered_df[(self.data.filtered_df['vote_average'] >= min_rating) & (self.data.filtered_df['vote_average'] <= max_rating)]
+        self.data.filtered_df = self.data.filtered_df[self.data.filtered_df['title'].str.lower().str.contains(search_title)]
         self.rows_loaded = 0
         self.update_table_display()
 
@@ -225,3 +239,10 @@ class MainWindow(tk.Tk):
         self.rows_loaded = 0
         self.update_table_display()
         self.movie_table.heading(self.movie_table_columns.index(column), command=lambda: self.sort_table(column, not direction))
+
+    # --- CHART ---
+    def draw_chart(self):
+        plot = self.figure.add_subplot(111)
+        plot.plot([[0,75], [3,44], [10,36]])
+        self.canvas.draw()
+        self.toolbar.update()

@@ -30,3 +30,6 @@ class MoviesList:
     @property
     def filtered_size(self):
         return len(self.filtered_df)
+
+    def films_count_by_year(self):
+        pass
