@@ -3,7 +3,7 @@ import pandas as pd
 
 class MoviesList:
     def __init__(self):
-        self.df = pd.read_csv("movies1.csv", delimiter=";", encoding="iso-8859-1", dtype={'title': str, 'genres': str,
+        self.df = pd.read_csv("movies.csv", delimiter=",", encoding="iso-8859-1", dtype={'title': str, 'genres': str,
                                                                                           'original_language': str,
                                                                                           'production_companies': str,
                                                                                           'budget': float,

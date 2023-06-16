@@ -5,17 +5,11 @@ import matplotlib
 
 matplotlib.use('TkAgg')
 
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_tkagg import (
-    FigureCanvasTkAgg,
-    NavigationToolbar2Tk
-)
-
 from matplotlib.backends._backend_tk import NavigationToolbar2Tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
-
 from movies_list import MoviesList
+
 
 class MainWindow(tk.Tk):
     def __init__(self):
@@ -44,8 +38,6 @@ class MainWindow(tk.Tk):
         self.chart_button = tk.Button(self.chart, text="DRAW", command=self.draw_chart)
         self.toolbar = NavigationToolbar2Tk(self.canvas, self.chart_frame)
         self.canvas.get_tk_widget().pack()
-        # self.chart_frame.grid(row=0, column=0)
-        # self.chart_button.grid(row=1, column=0)
         self.chart_frame.pack(anchor='n')
         self.chart_button.pack(anchor='s')
 
@@ -87,7 +79,8 @@ class MainWindow(tk.Tk):
 
         self.search_frame = tk.Frame(self.search, borderwidth=1, relief=SOLID, width=1000, height=1000)
         self.info_frame = tk.Frame(self.search, borderwidth=1, relief=SOLID, width=300, height=300)
-        self.sort_frame = tk.Frame(self.search)
+        self.info_frame.grid(row=2, column=2, sticky='e', padx=15, pady=25, rowspan=2)
+        self.select_frame = tk.Frame(self.search_frame)
 
         language_counts = self.data.filtered_df['original_language'].value_counts()
         languages = language_counts.index.tolist()
@@ -176,12 +169,12 @@ class MainWindow(tk.Tk):
         self.actors_info_label = Label(self.info_frame, wraplength=400)
 
         self.item_label = Label(self.search_frame, text='Параметров загружено 0/15')
+        self.item_label.grid(row=9, column=0, sticky='w', columnspan=3)
         self.item_count = 0
 
         # self.release_date_start_date_entry = DateEntry(self.search_frame)
         # self.release_date_finish_date_entry = DateEntry(self.search_frame)
 
-        # self.search_button.pack(anchor=SE, side=BOTTOM)
         '''self.release_date_start_date_entry.grid(column=0, row=0)
         self.release_date_finish_date_entry.grid(column=1, row=0)'''
         self.max_vote_count_slider.grid(row=7, column=4, padx=5)
@@ -226,8 +219,7 @@ class MainWindow(tk.Tk):
         self.actors_info_label.grid_remove()
 
         self.search_frame.grid(row=2, column=0, sticky='wn', padx=15, pady=25, columnspan=2)
-        self.sort_frame.grid(row=3, column=0, sticky='nw', padx=15, columnspan=2)
-        self.info_frame.grid_remove()
+        self.select_frame.grid(row=8, column=0, sticky='nw', padx=15, columnspan=3)
 
         self.min_rating_slider.bind("<B1-Motion>", self.update_table)
         self.max_rating_slider.bind("<B1-Motion>", self.update_table)
@@ -238,8 +230,6 @@ class MainWindow(tk.Tk):
 
         self.update_table_display()
         self.mainloop()
-
-
 
     def update_table(self, event=None):
         selected_language = self.language_combobox.get()
@@ -280,7 +270,7 @@ class MainWindow(tk.Tk):
         if keyword not in self.selected_keywords and self.item_count < 15:
             self.selected_keywords.append(keyword)
             self.item_label.grid(row=9, column=0, sticky='w', columnspan=3)
-            keyword_frame = tk.Frame(self.search_frame)
+            keyword_frame = tk.Frame(self.select_frame)
             keyword_frame.grid(row=self.item_count // 3 + 10, column=self.item_count % 3, sticky='w', padx=5)
             keyword_label = Label(keyword_frame, text=keyword)
             keyword_label.pack(side="left")
@@ -294,7 +284,6 @@ class MainWindow(tk.Tk):
         genre = self.genre_combobox.get()
         if genre not in self.selected_genres and self.item_count < 15:
             self.selected_genres.append(genre)
-            self.item_label.grid(row=9, column=0, sticky='w', columnspan=3)
             genre_frame = tk.Frame(self.search_frame)
             genre_frame.grid(row=self.item_count // 3 + 10, column=self.item_count % 3, sticky='w', padx=5)
             genre_label = Label(genre_frame, text=genre)
@@ -372,7 +361,6 @@ class MainWindow(tk.Tk):
             selected_item = self.movie_table.focus()
             movie_data = self.movie_table.item(selected_item)
             movie_info = movie_data['values']
-            self.info_frame.grid(row=2, column=2, sticky='e', padx=15, pady=25, rowspan=2)
             if movie_info[0] != '':
                 self.title_info_label.config(text="Название: " + movie_info[0])
                 self.title_info_label.grid(row=0, column=0, sticky='w')
@@ -453,8 +441,6 @@ class MainWindow(tk.Tk):
         self.movie_table.delete(*self.movie_table.get_children())
         rows_to_show = self.data.filtered_df[self.rows_loaded:self.rows_loaded + 10]
 
-
-
         for index, row in rows_to_show.iterrows():
             self.movie_table.insert("", index, values=list(row))
 
@@ -471,8 +457,6 @@ class MainWindow(tk.Tk):
         if self.rows_loaded - 10 >= 0:
             self.rows_loaded -= 10
         self.update_table_display()
-
-
 
     def sort_table(self, column, direction):
         self.data.filtered_df.sort_values(by=column, ascending=direction, inplace=True)
