@@ -33,6 +33,7 @@ def update_table(event=None):
 
     global filtered_df, rows_loaded
 
+    filtered_df = df.copy()
     if selected_language != "":
         filtered_df = filtered_df[filtered_df["Язык оригинала"] == selected_language]
     filtered_df = filtered_df[
