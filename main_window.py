@@ -1,15 +1,12 @@
 import tkinter as tk
 from tkinter import BOTH, SOLID, HORIZONTAL
 from tkinter.ttk import Notebook, Treeview, Combobox, Entry, Label
-import matplotlib
-
-matplotlib.use('TkAgg')
 
 from matplotlib.backends._backend_tk import NavigationToolbar2Tk
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 from matplotlib.figure import Figure
-from movies_list import MoviesList
 
+from movies_list import MoviesList
 
 class MainWindow(tk.Tk):
     def __init__(self):
@@ -30,16 +27,43 @@ class MainWindow(tk.Tk):
         self.data = MoviesList()
         self.rows_loaded = 0
 
+
+
         # --- CHART ---
 
         self.chart_frame = tk.Frame(self.chart)
         self.figure = Figure(figsize=(3, 3), dpi=200)
         self.canvas = FigureCanvasTkAgg(self.figure, master=self.chart_frame)
-        self.chart_button = tk.Button(self.chart, text="DRAW", command=self.draw_chart)
+        self.plot = self.figure.add_subplot(111)
+        self.chart_button = tk.Button(self.chart, text="DRAW", command=self.select_chart)
+        self.clear_button = tk.Button(self.chart, text="Очистить график", command=self.clear_chart)
         self.toolbar = NavigationToolbar2Tk(self.canvas, self.chart_frame)
         self.canvas.get_tk_widget().pack()
+
+        # self.chart_options_x = {tuple(self.data.release_year): 'Годы выхода', tuple(self.data.languages): 'Языки оригинала', tuple(self.data.productions): 'Производственные компании', tuple(self.data.genres): 'Жанры',tuple(self.data.keywords): 'Теги', tuple(self.data.real_actors): 'Актёры'}
+        self.chart_options_x = {'Годы выхода': ('release_date', tuple(self.data.release_year)),
+                                'Языки оригинала': ('original_language', tuple(self.data.languages)),
+                                'Производственные компании': ('production_companies', tuple(self.data.productions)),
+                                'Жанры': ('genres', tuple(self.data.genres)),
+                                'Теги': ('keywords', tuple(self.data.keywords)),
+                                'Актёры': ('credits', tuple(self.data.real_actors))}
+        self.chart_keys_x = list(self.chart_options_x.keys())
+        # self.reversed_chart_options = {value: key for key, value in self.chart_options_x.items()}
+        self.reversed_chart_options_1 = {value[0]: key for key, value in self.chart_options_x.items()}
+        self.reversed_chart_options_2 = {value[1]: key for key, value in self.chart_options_x.items()}
+
+        self.chart_combobox_x = Combobox(self.chart_frame, values=self.chart_keys_x)
+
+        diagram_options = ['Линейный график', 'Точечный график', 'Столбчатая диаграмма', 'Круговая диаграмма']
+        self.diagram_combobox = Combobox(self.chart_frame, values=diagram_options)
+        # self.chart_frame.grid(row=0, column=0)
+        # self.chart_button.grid(row=1, column=0)
         self.chart_frame.pack(anchor='n')
+        self.chart_combobox_x.pack()
         self.chart_button.pack(anchor='s')
+        self.clear_button.pack()
+        self.diagram_combobox.pack()
+
 
         # --- SEARCH ---
         self.sorted_column = 'popularity'
@@ -79,30 +103,12 @@ class MainWindow(tk.Tk):
 
         self.search_frame = tk.Frame(self.search, borderwidth=1, relief=SOLID, width=1000, height=1000)
         self.info_frame = tk.Frame(self.search, borderwidth=1, relief=SOLID, width=300, height=300)
-        self.info_frame.grid(row=2, column=2, sticky='e', padx=15, pady=25, rowspan=2)
-        self.select_frame = tk.Frame(self.search_frame)
+        self.sort_frame = tk.Frame(self.search)
 
-        language_counts = self.data.filtered_df['original_language'].value_counts()
-        languages = language_counts.index.tolist()
-        languages.insert(0, "")
 
-        genres = list(self.data.filtered_df['genres'].str.split('-').explode().unique())
-        genres.sort()
-
-        keyword_counts = self.data.filtered_df['keywords'].str.split('-').explode().value_counts()
-        keywords = keyword_counts.index.tolist()
-        self.original_keywords = list(self.data.filtered_df['keywords'].str.split('-').explode().unique())
-
-        production_counts = self.data.filtered_df['production_companies'].str.split('-').explode().value_counts()
-        self.original_production = list(self.data.filtered_df['production_companies'].str.split('-').explode().unique())
-        productions = production_counts.index.tolist()
-
-        actor_counts = self.data.filtered_df['credits'].str.split('-').explode().value_counts()
-        self.original_actors = list(self.data.filtered_df['credits'].str.split('-').explode().unique())
-        actors = actor_counts.index.tolist()
 
         self.genre_label = tk.Label(self.search_frame, text='Жанры')
-        self.genre_combobox = Combobox(self.search_frame, values=genres, state="readonly")
+        self.genre_combobox = Combobox(self.search_frame, values=self.data.genres, state="readonly")
         self.genre_combobox.bind("<<ComboboxSelected>>", self.add_genre)
         self.selected_genres = []
 
@@ -111,23 +117,23 @@ class MainWindow(tk.Tk):
         self.name_entry.bind("<KeyRelease>", self.update_table)
 
         self.language_label = Label(self.search_frame, text='Язык')
-        self.language_combobox = Combobox(self.search_frame, values=languages, state="readonly")
+        self.language_combobox = Combobox(self.search_frame, values=self.data.languages, state="readonly")
         self.language_combobox.bind("<<ComboboxSelected>>", self.update_table)
 
         self.production_label = Label(self.search_frame, text='Кинокомпании')
-        self.production_combobox = Combobox(self.search_frame, values=productions)
+        self.production_combobox = Combobox(self.search_frame, values=self.data.productions)
         self.production_combobox.bind("<KeyRelease>", self.search_production)
         self.production_combobox.bind("<<ComboboxSelected>>", self.add_production)
         self.selected_productions = []
 
         self.keyword_label = Label(self.search_frame, text='Теги')
-        self.keyword_combobox = Combobox(self.search_frame, values=keywords)
+        self.keyword_combobox = Combobox(self.search_frame, values=self.data.keywords)
         self.keyword_combobox.bind("<KeyRelease>", self.search_keyword)
         self.keyword_combobox.bind("<<ComboboxSelected>>", self.add_keyword)
         self.selected_keywords = []
 
         self.actor_label = Label(self.search_frame, text='Актёры')
-        self.actor_combobox = Combobox(self.search_frame, values=actors)
+        self.actor_combobox = Combobox(self.search_frame, values=self.data.real_actors)
         self.actor_combobox.bind("<KeyRelease>", self.search_actor)
         self.actor_combobox.bind("<<ComboboxSelected>>", self.add_actor)
         self.selected_actors = []
@@ -169,12 +175,12 @@ class MainWindow(tk.Tk):
         self.actors_info_label = Label(self.info_frame, wraplength=400)
 
         self.item_label = Label(self.search_frame, text='Параметров загружено 0/15')
-        self.item_label.grid(row=9, column=0, sticky='w', columnspan=3)
         self.item_count = 0
 
         # self.release_date_start_date_entry = DateEntry(self.search_frame)
         # self.release_date_finish_date_entry = DateEntry(self.search_frame)
 
+        # self.search_button.pack(anchor=SE, side=BOTTOM)
         '''self.release_date_start_date_entry.grid(column=0, row=0)
         self.release_date_finish_date_entry.grid(column=1, row=0)'''
         self.max_vote_count_slider.grid(row=7, column=4, padx=5)
@@ -219,7 +225,8 @@ class MainWindow(tk.Tk):
         self.actors_info_label.grid_remove()
 
         self.search_frame.grid(row=2, column=0, sticky='wn', padx=15, pady=25, columnspan=2)
-        self.select_frame.grid(row=8, column=0, sticky='nw', padx=15, columnspan=3)
+        self.sort_frame.grid(row=3, column=0, sticky='nw', padx=15, columnspan=2)
+        self.info_frame.grid_remove()
 
         self.min_rating_slider.bind("<B1-Motion>", self.update_table)
         self.max_rating_slider.bind("<B1-Motion>", self.update_table)
@@ -230,6 +237,8 @@ class MainWindow(tk.Tk):
 
         self.update_table_display()
         self.mainloop()
+
+
 
     def update_table(self, event=None):
         selected_language = self.language_combobox.get()
@@ -270,7 +279,7 @@ class MainWindow(tk.Tk):
         if keyword not in self.selected_keywords and self.item_count < 15:
             self.selected_keywords.append(keyword)
             self.item_label.grid(row=9, column=0, sticky='w', columnspan=3)
-            keyword_frame = tk.Frame(self.select_frame)
+            keyword_frame = tk.Frame(self.search_frame)
             keyword_frame.grid(row=self.item_count // 3 + 10, column=self.item_count % 3, sticky='w', padx=5)
             keyword_label = Label(keyword_frame, text=keyword)
             keyword_label.pack(side="left")
@@ -284,6 +293,7 @@ class MainWindow(tk.Tk):
         genre = self.genre_combobox.get()
         if genre not in self.selected_genres and self.item_count < 15:
             self.selected_genres.append(genre)
+            self.item_label.grid(row=9, column=0, sticky='w', columnspan=3)
             genre_frame = tk.Frame(self.search_frame)
             genre_frame.grid(row=self.item_count // 3 + 10, column=self.item_count % 3, sticky='w', padx=5)
             genre_label = Label(genre_frame, text=genre)
@@ -335,25 +345,25 @@ class MainWindow(tk.Tk):
     def search_keyword(self, event):
         search_term = self.keyword_combobox.get().lower()
         if search_term == '':
-            filtered_values = self.original_keywords
+            filtered_values = self.data.original_keywords
         else:
-            filtered_values = [value for value in self.original_keywords if search_term in value]
+            filtered_values = [value for value in self.data.original_keywords if search_term in value]
         self.keyword_combobox['values'] = filtered_values
 
     def search_production(self, event):
         search_term = self.production_combobox.get().lower()
         if search_term == '':
-            filtered_values = self.original_production
+            filtered_values = self.data.original_production
         else:
-            filtered_values = [value for value in self.original_production if search_term in value.lower()]
+            filtered_values = [value for value in self.data.original_production if search_term in value.lower()]
         self.production_combobox['values'] = filtered_values
 
     def search_actor(self, event):
         search_term = self.actor_combobox.get().lower()
         if search_term == '':
-            filtered_values = self.original_actors
+            filtered_values = self.data.original_actors
         else:
-            filtered_values = [value for value in self.original_actors if search_term in value]
+            filtered_values = [value for value in self.data.original_actors if search_term in value]
         self.actor_combobox['values'] = filtered_values
 
     def show_movie_details(self, event):
@@ -361,6 +371,7 @@ class MainWindow(tk.Tk):
             selected_item = self.movie_table.focus()
             movie_data = self.movie_table.item(selected_item)
             movie_info = movie_data['values']
+            self.info_frame.grid(row=2, column=2, sticky='e', padx=15, pady=25, rowspan=2)
             if movie_info[0] != '':
                 self.title_info_label.config(text="Название: " + movie_info[0])
                 self.title_info_label.grid(row=0, column=0, sticky='w')
@@ -441,6 +452,8 @@ class MainWindow(tk.Tk):
         self.movie_table.delete(*self.movie_table.get_children())
         rows_to_show = self.data.filtered_df[self.rows_loaded:self.rows_loaded + 10]
 
+
+
         for index, row in rows_to_show.iterrows():
             self.movie_table.insert("", index, values=list(row))
 
@@ -458,6 +471,8 @@ class MainWindow(tk.Tk):
             self.rows_loaded -= 10
         self.update_table_display()
 
+
+
     def sort_table(self, column, direction):
         self.data.filtered_df.sort_values(by=column, ascending=direction, inplace=True)
         # if direction:
@@ -472,8 +487,63 @@ class MainWindow(tk.Tk):
         self.movie_table.heading(column_index, command=lambda: self.sort_table(column, not direction))
 
     # --- CHART ---
-    def draw_chart(self):
-        plot = self.figure.add_subplot(111)
-        plot.plot([[0, 75], [3, 44], [10, 36]])
+    def clear_chart(self):
+        self.plot.clear()
         self.canvas.draw()
         self.toolbar.update()
+    def draw_bar_chart(self):
+        self.plot.clear()
+        self.canvas.draw()
+        self.toolbar.update()
+        chart_option = self.chart_combobox_x.get()
+        chart_columns = self.chart_options_x[chart_option][0]
+        chart_values = self.chart_options_x[chart_option][1]
+        chart_values = tuple(filter(None, chart_values))
+        movies_count = self.data.df[chart_columns].str.extract(str(chart_values)).value_counts().sort_index().head(1)
+        self.plot.bar(movies_count.index, movies_count.values)
+        # self.plot.set_yscale('log')
+        self.canvas.draw()
+
+    '''
+    def draw_plot_chart(self):
+        self.plot.clear()
+        self.canvas.draw()
+        self.toolbar.update()
+        chart_option = self.chart_combobox_x.get()
+        chart_value = self.reversed_chart_options[chart_option]
+        movies_count = self.data.df[chart_value].value_counts().sort_index()
+        self.plot.plot(movies_count.index, movies_count.values)
+        self.canvas.draw()
+    
+    def draw_scatter_chart(self):
+        self.plot.clear()
+        self.canvas.draw()
+        self.toolbar.update()
+        chart_option = self.chart_combobox.get()
+        chart_value = self.reversed_chart_options[chart_option]
+        movies_count = self.data.df[chart_value].value_counts().sort_index()
+        self.plot.scatter(movies_count.index, movies_count.values)
+        self.canvas.draw()
+
+
+    def draw_pie_chart(self):
+        self.plot.clear()
+        self.canvas.draw()
+        self.toolbar.update()
+        chart_option = self.chart_combobox.get()
+        chart_value = self.reversed_chart_options_1[chart_option]
+        movies_count = self.data.df[chart_value].value_counts().sort_index()
+        self.plot.pie(movies_count.index, movies_count.values, radius=0.5)
+        self.canvas.draw()
+    '''
+
+    def select_chart(self):
+        selected_chart = self.diagram_combobox.get()
+        if selected_chart == 'Линейный график':
+            self.draw_plot_chart()
+        elif selected_chart == 'Точечный график':
+            self.draw_scatter_chart()
+        elif selected_chart == 'Столбчатая диаграмма':
+            self.draw_bar_chart()
+        elif selected_chart == 'Круговая диаграмма':
+            self.draw_pie_chart()
